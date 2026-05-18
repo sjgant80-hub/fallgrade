@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FallGrade · AI Craftspeople Guild · Portfolio Assessment</title>
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg:#060810;--surface:#0a0e18;--s2:#0e1220;--s3:#121828;
+--border:#1a2035;--blit:#222a42;
+--text:#7a82a0;--dim:#3e4460;--bright:#c8cee8;--white:#e8ecff;
+--green:#00d4aa;--gdim:rgba(0,212,170,.06);--gglow:rgba(0,212,170,.15);
+--amber:#e8a830;--adim:rgba(232,168,48,.06);
+--red:#e84040;--rdim:rgba(232,64,64,.06);
+--blue:#4088e8;--bldim:rgba(64,136,232,.06);
+--purple:#8860e8;--pdim:rgba(136,96,232,.06);
+--cyan:#40c8e8;
+--hdr:'Oxanium',system-ui,sans-serif;
+--body:'Libre Baskerville',Georgia,serif;
+--mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--body);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.7;-webkit-font-smoothing:antialiased}
+::selection{background:var(--green);color:var(--bg)}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.02;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+
+.app{max-width:860px;margin:0 auto;padding:20px 16px}
+
+/* HEADER */
+.hdr{text-align:center;padding:40px 0 24px;position:relative}
+.hdr::before{content:'◇';position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--green);opacity:.25;font-family:var(--mono)}
+.hdr h1{font-family:var(--hdr);font-size:clamp(24px,5vw,38px);font-weight:700;color:var(--white);letter-spacing:.04em}
+.hdr h1 em{color:var(--green);font-style:normal}
+.hdr .sub{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.1em;margin-top:4px;text-transform:uppercase}
+.hdr .tag{font-family:var(--body);font-style:italic;font-size:13px;color:var(--text);margin-top:8px;opacity:.5}
+
+/* PANELS */
+.p{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:12px;position:relative;overflow:hidden}
+.p-tag{position:absolute;top:-1px;right:10px;font-family:var(--mono);font-size:7px;color:var(--dim);background:var(--bg);padding:1px 6px;border-radius:0 0 3px 3px;letter-spacing:.1em;text-transform:uppercase}
+.lbl{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:block}
+
+/* INPUT */
+.inp{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-family:var(--mono);font-size:12px}
+.inp:focus{outline:none;border-color:var(--green)}
+textarea.inp{font-family:var(--mono);min-height:200px;resize:vertical;line-height:1.6}
+
+/* BUTTONS */
+.btn{padding:10px 20px;border:none;border-radius:8px;font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;letter-spacing:.02em;transition:all .2s}
+.btn-g{background:var(--green);color:var(--bg)}.btn-g:hover{background:#00e8ba;transform:translateY(-1px)}
+.btn-g:disabled{opacity:.3;cursor:not-allowed;transform:none}
+.btn-o{background:transparent;border:1px solid var(--border);color:var(--dim)}.btn-o:hover{border-color:var(--text);color:var(--text)}
+.ctrls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* SETTINGS */
+.settings{display:none;margin-top:12px}.settings.open{display:block}
+.key-row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.key-label{font-family:var(--mono);font-size:9px;color:var(--dim);min-width:64px}
+.key-dot{width:6px;height:6px;border-radius:50%;background:var(--dim)}.key-dot.on{background:var(--green)}
+
+/* RESULTS */
+.results{display:none}.results.show{display:block}
+
+/* BLOOM VECTOR */
+.bloom{display:flex;gap:4px;align-items:flex-end;height:100px;margin:16px 0;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)}
+.bloom-bar{flex:1;border-radius:3px 3px 0 0;transition:height 1.2s cubic-bezier(.16,1,.3,1);position:relative;min-width:0}
+.bloom-bar .bloom-lbl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:7px;color:var(--dim);white-space:nowrap}
+.bloom-bar .bloom-val{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;color:var(--bright)}
+
+/* DIMENSIONS */
+.dim-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}
+.dim-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;transition:border-color .4s}
+.dim-card .dim-name{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.dim-card .dim-score{font-family:var(--hdr);font-size:28px;font-weight:700;color:var(--bright)}
+.dim-card .dim-bar{height:3px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden}
+.dim-card .dim-fill{height:100%;border-radius:2px;transition:width 1s cubic-bezier(.16,1,.3,1)}
+.dim-card.strong{border-color:var(--green)}.dim-card.strong .dim-score{color:var(--green)}
+.dim-card.mid{border-color:var(--amber)}.dim-card.mid .dim-score{color:var(--amber)}
+.dim-card.weak{border-color:var(--red)}.dim-card.weak .dim-score{color:var(--red)}
+
+/* ARCHETYPE */
+.archetype{text-align:center;padding:20px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin:16px 0}
+.arch-icon{font-size:48px;margin-bottom:8px}
+.arch-name{font-family:var(--hdr);font-size:22px;font-weight:700;color:var(--white);margin-bottom:4px}
+.arch-desc{font-size:13px;color:var(--text);max-width:400px;margin:0 auto}
+
+/* VERDICT */
+.verdict{text-align:center;padding:20px;border-radius:10px;margin:16px 0}
+.verdict.pass{background:var(--gdim);border:1px solid rgba(0,212,170,.2)}
+.verdict.review{background:var(--adim);border:1px solid rgba(232,168,48,.2)}
+.verdict.develop{background:var(--rdim);border:1px solid rgba(232,64,64,.2)}
+.verdict h2{font-family:var(--hdr);font-size:24px;margin-bottom:6px}
+.verdict.pass h2{color:var(--green)}.verdict.review h2{color:var(--amber)}.verdict.develop h2{color:var(--red)}
+.verdict p{font-size:13px}
+
+/* PROSE */
+.prose{font-size:13px;line-height:1.8;color:var(--text);white-space:pre-wrap}
+.prose strong{color:var(--bright)}
+
+/* CONFIDENCE */
+.conf{display:flex;align-items:center;gap:8px;margin:10px 0}
+.conf-track{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.conf-fill{height:100%;border-radius:2px;transition:width 1s}
+.conf-val{font-family:var(--mono);font-size:11px;color:var(--bright);min-width:28px;text-align:right}
+
+/* LOADING */
+.loading{text-align:center;padding:40px;display:none}
+.loading.show{display:block}
+.loading p{font-family:var(--mono);font-size:11px;color:var(--green)}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+.loading .dot{animation:pulse 1.5s infinite}
+
+/* FOOTER */
+.ftr{text-align:center;padding:28px 0;border-top:1px solid var(--border);margin-top:28px}
+.ftr p{font-family:var(--mono);font-size:7px;color:var(--dim);line-height:2.4}
+
+@media(max-width:600px){.dim-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="hdr">
+<h1>Fall<em>Grade</em></h1>
+<div class="sub">AI CRAFTSPEOPLE GUILD · PORTFOLIO ASSESSMENT</div>
+<div class="tag">Show us your best work. We'll show you where you stand.</div>
+</div>
+
+<!-- INTAKE -->
+<div class="p" id="intakePanel">
+<span class="p-tag">intake</span>
+<span class="lbl">Submit Your Best AI Work</span>
+<p style="font-size:12px;color:var(--dim);margin-bottom:10px">Paste a system instruction, prompt, tool output, or complete interaction. This is your portfolio piece — the work that represents your skill level. We assess across 9 dimensions.</p>
+<textarea class="inp" id="workInput" placeholder="Paste your best work here...
+
+Examples of what to submit:
+• A system instruction you wrote for a real project
+• A complex prompt that produced exceptional output
+• An AI-powered workflow you designed
+• A tool configuration or agent architecture
+• A complete interaction showing your technique
+
+The more complete the sample, the more accurate the assessment."></textarea>
+
+<span class="lbl" style="margin-top:14px">Context (optional)</span>
+<input class="inp" id="contextInput" placeholder="What domain is this for? What was the goal? What constraints were you working with?">
+
+<div class="ctrls">
+<button class="btn btn-g" id="gradeBtn" onclick="runGrade()">Grade My Work ◇</button>
+<button class="btn btn-o" onclick="toggleSettings()">⚙ API Key</button>
+</div>
+
+<div class="settings" id="settings">
+<div class="key-row">
+<span class="key-label">Provider</span>
+<select class="inp" id="providerSelect" style="width:auto;padding:6px 8px">
+<option value="gemini">Gemini (free)</option>
+<option value="deepseek">DeepSeek (free)</option>
+<option value="anthropic">Anthropic (paid)</option>
+</select>
+</div>
+<div class="key-row">
+<span class="key-label">API Key</span>
+<input type="password" class="inp" id="apiKeyInput" placeholder="Paste key" style="flex:1">
+<div class="key-dot" id="keyDot"></div>
+</div>
+<button class="btn btn-o" onclick="saveKey()" style="margin-top:6px">Save</button>
+</div>
+</div>
+
+<!-- LOADING -->
+<div class="loading" id="loading">
+<p class="dot">◇ Analysing portfolio submission...</p>
+<p style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:6px" id="loadTrace">Parsing structure...</p>
+</div>
+
+<!-- RESULTS -->
+<div class="results" id="results">
+
+<!-- VERDICT -->
+<div class="verdict" id="verdict">
+<h2 id="verdictTitle">—</h2>
+<p id="verdictText"></p>
+</div>
+
+<!-- BLOOM -->
+<div class="p" id="bloomPanel">
+<span class="p-tag">bloom vector</span>
+<span class="lbl">9-Dimension Skill Profile</span>
+<div class="bloom" id="bloomChart"></div>
+</div>
+
+<!-- DIMENSIONS -->
+<div class="p" id="dimPanel">
+<span class="p-tag">dimensions</span>
+<span class="lbl">Detailed Scores</span>
+<div class="dim-grid" id="dimGrid"></div>
+</div>
+
+<!-- ARCHETYPE -->
+<div class="p" id="archPanel">
+<span class="p-tag">archetype</span>
+<span class="lbl">Closest Craftsperson Archetype</span>
+<div class="archetype" id="archetype"></div>
+</div>
+
+<!-- ANALYSIS -->
+<div class="p" id="analysisPanel">
+<span class="p-tag">analysis</span>
+<span class="lbl">Full Assessment</span>
+<div class="prose" id="fullAnalysis"></div>
+<div class="conf" style="margin-top:14px">
+<span style="font-family:var(--mono);font-size:8px;color:var(--dim)">Assessment confidence</span>
+<div class="conf-track"><div class="conf-fill" id="confFill" style="width:0"></div></div>
+<span class="conf-val" id="confVal">—</span>
+</div>
+</div>
+
+<!-- RECOMMENDATIONS -->
+<div class="p" id="recPanel">
+<span class="p-tag">path forward</span>
+<span class="lbl">Development Recommendations</span>
+<div class="prose" id="recommendations"></div>
+</div>
+
+</div>
+
+<div class="ftr">
+<p>FallGrade · AI Craftspeople Guild · Portfolio Assessment</p>
+<p>9-Dimension Skill Vector · 8 Archetypes · Bloom Vectorisation</p>
+<p>Built by AI Native Solutions · ◊·κ=1 · 510,510</p>
+</div>
+
+</div>
+
+<script>
+// ═══ DIMENSIONS ═══
+const DIMS = [
+  { key: 'specificity', label: 'Specificity', desc: 'How precise and targeted vs generic' },
+  { key: 'structure', label: 'Structure', desc: 'Architectural thinking and organisation' },
+  { key: 'domain', label: 'Domain Depth', desc: 'Genuine expertise encoded, not surface knowledge' },
+  { key: 'constraints', label: 'Constraints', desc: 'What it prevents, not just what it enables' },
+  { key: 'voice', label: 'Voice Control', desc: 'Distinctive output vs generic AI tone' },
+  { key: 'selfcheck', label: 'Self-Checking', desc: 'Built-in verification and error catching' },
+  { key: 'adversarial', label: 'Adversarial Awareness', desc: 'Edge cases, failure modes, anti-gaming' },
+  { key: 'creativity', label: 'Creative Architecture', desc: 'Novel patterns beyond standard templates' },
+  { key: 'integration', label: 'System Thinking', desc: 'Multi-component, multi-source, pipeline design' }
+];
+
+const DIM_COLORS = ['#00d4aa','#4088e8','#e8a830','#e84040','#8860e8','#40c8e8','#e86040','#a0e840','#e840a0'];
+
+// ═══ ARCHETYPES ═══
+const ARCHETYPES = [
+  { name: 'The Architect', icon: '🏗️', pattern: [9,9,5,7,3,5,5,7,9], desc: 'You design systems, not prompts. Your strength is seeing how components connect into pipelines. You think in architecture before you think in words.' },
+  { name: 'The Specialist', icon: '🔬', pattern: [7,5,9,7,3,5,3,3,5], desc: 'Deep domain expertise encoded precisely. You know your field well enough to catch what AI gets wrong. Your system instructions read like expert briefings.' },
+  { name: 'The Wordsmith', icon: '✍️', pattern: [5,3,5,3,9,5,3,9,3], desc: 'Voice and tone are your strengths. You make AI output sound human, distinctive, and alive. Your prompts have personality baked into the architecture.' },
+  { name: 'The Auditor', icon: '🔍', pattern: [7,7,5,9,3,9,7,3,5], desc: 'You build guardrails and verification. Your system instructions catch failure modes others miss. You think about what goes wrong before what goes right.' },
+  { name: 'The Hacker', icon: '⚡', pattern: [5,5,3,5,3,3,9,9,7], desc: 'Creative and adversarial. You find novel patterns, exploit edge cases productively, and build things nobody expected. Your work surprises even you.' },
+  { name: 'The Orchestrator', icon: '🎼', pattern: [7,7,7,7,7,7,7,7,7], desc: 'Balanced across all dimensions. No dramatic peaks but no weaknesses. You coordinate complex AI workflows where everything needs to work together.' },
+  { name: 'The Pioneer', icon: '🧭', pattern: [3,3,3,3,3,3,3,9,5], desc: 'Raw creativity outpacing technique. Your ideas are ahead of your execution. With skill development, you could build remarkable things.' },
+  { name: 'The Apprentice', icon: '📖', pattern: [3,3,3,3,3,3,3,3,3], desc: 'Early in the journey. The fact that you submitted work for assessment shows initiative. The skills are learnable — start with FallLearn Module 3.' }
+];
+
+// ═══ API ═══
+function toggleSettings() { document.getElementById('settings').classList.toggle('open') }
+function saveKey() {
+  const p = document.getElementById('providerSelect').value;
+  const k = document.getElementById('apiKeyInput').value.trim();
+  if (k) { localStorage.setItem('fg_provider', p); localStorage.setItem('fg_key', k); document.getElementById('keyDot').classList.add('on'); }
+}
+
+async function callAI(system, user) {
+  const provider = localStorage.getItem('fg_provider');
+  const key = localStorage.getItem('fg_key');
+  if (!provider || !key) return null;
+
+  try {
+    if (provider === 'gemini') {
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: system + '\n\n' + user }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 3000 } })
+      });
+      const d = await r.json(); return d.candidates?.[0]?.content?.parts?.[0]?.text;
+    }
+    if (provider === 'deepseek') {
+      const r = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0.2, max_tokens: 3000 })
+      });
+      const d = await r.json(); return d.choices?.[0]?.message?.content;
+    }
+    if (provider === 'anthropic') {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 3000, system, messages: [{ role: 'user', content: user }] })
+      });
+      const d = await r.json(); return d.content?.filter(c => c.type === 'text').map(c => c.text).join('\n');
+    }
+  } catch (e) { console.warn(e); }
+  return null;
+}
+
+// ═══ GRADING ═══
+async function runGrade() {
+  const work = document.getElementById('workInput').value.trim();
+  if (!work) return;
+  const context = document.getElementById('contextInput').value.trim();
+
+  const btn = document.getElementById('gradeBtn');
+  const loading = document.getElementById('loading');
+  const results = document.getElementById('results');
+
+  btn.disabled = true; btn.textContent = 'Grading...';
+  loading.classList.add('show'); results.classList.remove('show');
+
+  const traces = ['Parsing structure...', 'Measuring specificity...', 'Checking domain depth...', 'Evaluating constraints...', 'Analysing voice control...', 'Testing self-check patterns...', 'Scanning adversarial awareness...', 'Assessing creative architecture...', 'Mapping system thinking...', 'Computing bloom vector...', 'Matching archetype...'];
+  let ti = 0;
+  const traceInt = setInterval(() => { if (ti < traces.length) document.getElementById('loadTrace').textContent = traces[ti++]; }, 1500);
+
+  const systemPrompt = `You are FallGrade, the AI Craftspeople Guild portfolio assessor. You evaluate AI work submissions across 9 skill dimensions.
+
+Score each dimension 0-100:
+1. SPECIFICITY — How precise and targeted is the work? Generic "be helpful" = 10. Industry-specific with named regulations and edge cases = 90.
+2. STRUCTURE — Is there architectural thinking? Flat prompt = 20. Multi-layer system with clear separation of concerns = 90.
+3. DOMAIN_DEPTH — Does it encode genuine expertise? Surface knowledge anyone could Google = 20. Insider knowledge that catches non-obvious patterns = 90.
+4. CONSTRAINTS — Does it prevent bad outputs? No constraints = 10. Specific forbidden behaviours with reasoning = 80.
+5. VOICE_CONTROL — Does the output have distinctive voice? Default AI tone = 10. Clear register, forbidden phrases, personality architecture = 85.
+6. SELF_CHECKING — Does it verify its own output? No verification = 0. Built-in confidence scoring, assumption flagging, gap detection = 85.
+7. ADVERSARIAL — Does it handle edge cases and gaming? No awareness = 10. Deliberate trap-setting, contradiction detection, anti-gaming = 90.
+8. CREATIVITY — Novel patterns beyond templates? Standard prompt structure = 20. Innovative architecture (multi-agent, bloom vectors, recursive self-reference) = 90.
+9. SYSTEM_THINKING — Multi-component integration? Single prompt = 10. Multi-file cross-referencing, pipeline design, provider routing = 90.
+
+VERDICT LEVELS:
+- GUILD READY (avg ≥ 70, no dimension below 40): Ready for Guild membership
+- PROMISING (avg ≥ 50, no dimension below 20): Strong potential, needs development in specific areas
+- DEVELOPING (avg < 50): Early stage, recommend FallLearn course
+
+Respond ONLY in JSON (no markdown, no backticks):
+{
+  "scores": {"specificity":N,"structure":N,"domain":N,"constraints":N,"voice":N,"selfcheck":N,"adversarial":N,"creativity":N,"integration":N},
+  "verdict": "GUILD READY|PROMISING|DEVELOPING",
+  "archetype": "The Architect|The Specialist|The Wordsmith|The Auditor|The Hacker|The Orchestrator|The Pioneer|The Apprentice",
+  "strengths": ["top 2-3 specific strengths with evidence from the submission"],
+  "gaps": ["top 2-3 specific gaps with what's missing"],
+  "recommendations": ["3-4 specific actionable steps to improve"],
+  "analysis": "3-4 paragraph detailed assessment citing specific parts of the submission. Be honest and specific — generic praise is worthless. Point to exact phrases, patterns, or structural choices that demonstrate skill or reveal gaps.",
+  "confidence": N
+}`;
+
+  const userMsg = `Assess this AI work submission:\n\n${work}${context ? '\n\nContext: ' + context : ''}`;
+  const response = await callAI(systemPrompt, userMsg);
+
+  clearInterval(traceInt);
+  loading.classList.remove('show');
+
+  let data;
+  if (response) {
+    try {
+      const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      data = JSON.parse(match ? match[0] : cleaned);
+    } catch (e) {
+      data = null;
+    }
+  }
+
+  if (!data) {
+    // Fallback: basic heuristic grading
+    data = heuristicGrade(work);
+  }
+
+  renderResults(data);
+  results.classList.add('show');
+  btn.disabled = false; btn.textContent = 'Grade My Work ◇';
+}
+
+function heuristicGrade(work) {
+  const w = work.toLowerCase();
+  const len = work.length;
+  const lines = work.split('\n').length;
+
+  const s = {
+    specificity: Math.min(95, 20 + (w.includes('specific') ? 10 : 0) + (len > 500 ? 15 : 0) + (len > 1000 ? 15 : 0) + (w.match(/\b(must|always|never|exactly|required)\b/g)?.length || 0) * 5),
+    structure: Math.min(95, 15 + (lines > 10 ? 15 : 0) + (lines > 30 ? 15 : 0) + (w.includes('section') || w.includes('step') || w.includes('layer') ? 15 : 0) + (w.includes('format') || w.includes('output') ? 10 : 0)),
+    domain: Math.min(95, 15 + (w.match(/\b(regulation|compliance|fca|hmrc|gdpr|law|medical|legal|financial)\b/g)?.length || 0) * 12 + (len > 800 ? 10 : 0)),
+    constraints: Math.min(95, 10 + (w.match(/\b(do not|don't|never|avoid|must not|forbidden)\b/g)?.length || 0) * 10),
+    voice: Math.min(95, 10 + (w.match(/\b(tone|voice|style|register|personality|character)\b/g)?.length || 0) * 12 + (w.includes('never say') || w.includes('forbidden phrase') ? 20 : 0)),
+    selfcheck: Math.min(95, 5 + (w.match(/\b(verify|check|confidence|validate|before responding|review your)\b/g)?.length || 0) * 12),
+    adversarial: Math.min(95, 5 + (w.match(/\b(edge case|trap|contradiction|gaming|adversarial|failure|wrong)\b/g)?.length || 0) * 12),
+    creativity: Math.min(95, 10 + (w.match(/\b(bloom|vector|agent|recursive|multi-agent|pipeline|novel|innovative)\b/g)?.length || 0) * 12 + (len > 2000 ? 15 : 0)),
+    integration: Math.min(95, 10 + (w.match(/\b(cross-reference|multi-source|pipeline|file|csv|integrate|system)\b/g)?.length || 0) * 10 + (w.includes('api') || w.includes('provider') ? 15 : 0))
+  };
+
+  const avg = Object.values(s).reduce((a, b) => a + b) / 9;
+  const min = Math.min(...Object.values(s));
+  const verdict = avg >= 70 && min >= 40 ? 'GUILD READY' : avg >= 50 ? 'PROMISING' : 'DEVELOPING';
+
+  return {
+    scores: s, verdict,
+    archetype: matchArchetype(s),
+    strengths: ['Submission received and analysed via heuristic engine'],
+    gaps: ['Connect an API key for detailed AI-powered assessment'],
+    recommendations: ['Complete FallLearn modules for structured skill development', 'Submit again with API key for full 9-dimension analysis'],
+    analysis: `Heuristic assessment based on structural analysis. Work is ${len} characters across ${lines} lines. ${verdict === 'GUILD READY' ? 'Strong submission showing depth across multiple dimensions.' : verdict === 'PROMISING' ? 'Solid foundation with room for development in specific areas.' : 'Early stage work — recommend the FallLearn course for structured skill building.'} For a detailed AI-powered assessment with specific feedback on your work, connect an API key.`,
+    confidence: 35
+  };
+}
+
+function matchArchetype(scores) {
+  const s = DIMS.map(d => scores[d.key] || 0);
+  let bestMatch = 0, bestIdx = 0;
+  ARCHETYPES.forEach((arch, i) => {
+    let sim = 0;
+    arch.pattern.forEach((p, j) => {
+      const normalised = (s[j] || 0) / 10;
+      sim += 1 - Math.abs(p - normalised) / 9;
+    });
+    sim /= 9;
+    if (sim > bestMatch) { bestMatch = sim; bestIdx = i; }
+  });
+  return ARCHETYPES[bestIdx].name;
+}
+
+// ═══ RENDER ═══
+function renderResults(data) {
+  const scores = data.scores || {};
+  const avg = Object.values(scores).reduce((a, b) => a + b, 0) / DIMS.length;
+
+  // Verdict
+  const vd = document.getElementById('verdict');
+  const verdictClass = data.verdict === 'GUILD READY' ? 'pass' : data.verdict === 'PROMISING' ? 'review' : 'develop';
+  vd.className = 'verdict ' + verdictClass;
+  document.getElementById('verdictTitle').textContent = data.verdict || 'ASSESSED';
+  document.getElementById('verdictText').textContent = data.verdict === 'GUILD READY'
+    ? `Overall score: ${Math.round(avg)}/100. Your work demonstrates Guild-level craft across multiple dimensions.`
+    : data.verdict === 'PROMISING'
+    ? `Overall score: ${Math.round(avg)}/100. Strong foundation with specific areas for development before Guild readiness.`
+    : `Overall score: ${Math.round(avg)}/100. Start with the FallLearn course to build foundational skills.`;
+
+  // Bloom vector
+  const bloom = document.getElementById('bloomChart');
+  bloom.innerHTML = '';
+  DIMS.forEach((dim, i) => {
+    const val = scores[dim.key] || 0;
+    const bar = document.createElement('div');
+    bar.className = 'bloom-bar';
+    bar.style.background = DIM_COLORS[i];
+    bar.style.height = '0%';
+    bar.innerHTML = `<span class="bloom-lbl">${dim.label.substring(0, 4)}</span><span class="bloom-val">${val}</span>`;
+    bloom.appendChild(bar);
+    setTimeout(() => { bar.style.height = Math.max(3, val) + '%'; }, 100 + i * 80);
+  });
+
+  // Dimension cards
+  const grid = document.getElementById('dimGrid');
+  grid.innerHTML = '';
+  DIMS.forEach((dim, i) => {
+    const val = scores[dim.key] || 0;
+    const cls = val >= 70 ? 'strong' : val >= 40 ? 'mid' : 'weak';
+    const card = document.createElement('div');
+    card.className = 'dim-card ' + cls;
+    card.innerHTML = `
+      <div class="dim-name">${dim.label}</div>
+      <div class="dim-score">${val}</div>
+      <div class="dim-bar"><div class="dim-fill" style="width:0;background:${DIM_COLORS[i]}"></div></div>
+    `;
+    grid.appendChild(card);
+    setTimeout(() => { card.querySelector('.dim-fill').style.width = val + '%'; }, 200 + i * 60);
+  });
+
+  // Archetype
+  const archName = data.archetype || 'The Apprentice';
+  const arch = ARCHETYPES.find(a => a.name === archName) || ARCHETYPES[ARCHETYPES.length - 1];
+  document.getElementById('archetype').innerHTML = `
+    <div class="arch-icon">${arch.icon}</div>
+    <div class="arch-name">${arch.name}</div>
+    <div class="arch-desc">${arch.desc}</div>
+  `;
+
+  // Analysis
+  document.getElementById('fullAnalysis').textContent = data.analysis || '';
+
+  // Confidence
+  const conf = data.confidence || 0;
+  document.getElementById('confFill').style.width = conf + '%';
+  document.getElementById('confFill').style.background = conf > 60 ? 'var(--green)' : conf > 35 ? 'var(--amber)' : 'var(--red)';
+  document.getElementById('confVal').textContent = conf + '%';
+
+  // Recommendations
+  let recHTML = '';
+  if (data.strengths?.length) recHTML += '<strong>Strengths:</strong>\n' + data.strengths.map(s => '→ ' + s).join('\n') + '\n\n';
+  if (data.gaps?.length) recHTML += '<strong>Gaps:</strong>\n' + data.gaps.map(g => '→ ' + g).join('\n') + '\n\n';
+  if (data.recommendations?.length) recHTML += '<strong>Next steps:</strong>\n' + data.recommendations.map((r, i) => (i + 1) + '. ' + r).join('\n');
+  document.getElementById('recommendations').innerHTML = recHTML;
+}
+
+// ═══ INIT ═══
+const savedProvider = localStorage.getItem('fg_provider');
+const savedKey = localStorage.getItem('fg_key');
+if (savedProvider && savedKey) {
+  document.getElementById('providerSelect').value = savedProvider;
+  document.getElementById('apiKeyInput').value = savedKey;
+  document.getElementById('keyDot').classList.add('on');
+}
+</script>
+</body>
+</html>
